@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Rabbit Music - Offline player, stream and cache songs on your phone">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png?ver=9">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png?ver=9">
+  <title>Rabbit Music</title>
+  <link rel="stylesheet" href="/style.css?ver=9">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="header-left">
+        <h1 class="logo">&#9835; Rabbit Music</h1>
+      </div>
+      <div class="header-right">
+        <span id="offlineIndicator" class="offline-badge hidden">OFFLINE</span>
+        <span id="versionBadge" class="version-badge">v1</span>
+        <button id="refreshBtn" class="btn-refresh" onclick="refreshApp()" title="Refresh app / get updates">&#8635;</button>
+        <button id="installBtn" class="btn-install hidden" onclick="installPWA()">Install App</button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="search" onclick="switchTab('search')">Search</button>
+      <button class="tab" data-tab="queue" onclick="switchTab('queue')">Queue</button>
+      <button class="tab" data-tab="favorites" onclick="switchTab('favorites')">Favorites</button>
+      <button class="tab" data-tab="playlists" onclick="switchTab('playlists')">Playlists</button>
+      <button class="tab" data-tab="cached" onclick="switchTab('cached')">Cached</button>
+    </nav>
+
+    <main id="content">
+      <!-- Search Tab -->
+      <div id="tab-search" class="tab-content active">
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="Search songs..." autocomplete="off">
+          <button onclick="performSearch()" id="searchBtn">Search</button>
+        </div>
+        <div id="searchResults" class="song-list"></div>
+        <div id="searchLoading" class="loading hidden">
+          <div class="spinner"></div>
+          <span>Searching...</span>
+        </div>
+      </div>
+
+      <!-- Queue Tab -->
+      <div id="tab-queue" class="tab-content">
+        <div class="section-header">
+          <h2>Play Queue</h2>
+          <button class="btn-small btn-danger" onclick="clearQueue()">Clear All</button>
+        </div>
+        <div id="queueList" class="song-list"></div>
+        <div id="queueEmpty" class="empty-state">Queue is empty. Add songs from search!</div>
+      </div>
+
+      <!-- Favorites Tab -->
+      <div id="tab-favorites" class="tab-content">
+        <div class="section-header">
+          <h2>Favorites</h2>
+        </div>
+        <div id="favoritesList" class="song-list"></div>
+        <div id="favoritesEmpty" class="empty-state">No favorites yet. Tap the heart to add songs!</div>
+      </div>
+
+      <!-- Playlists Tab -->
+      <div id="tab-playlists" class="tab-content">
+        <div class="section-header">
+          <h2>Playlists</h2>
+          <button class="btn-small" onclick="createPlaylist()">+ New</button>
+        </div>
+        <div class="import-section">
+          <h3 class="import-title">Import a playlist</h3>
+          <p class="import-hint">Paste a Spotify, SoundCloud, YouTube or Lyra link — or a plain track list. Every song gets cached for offline.</p>
+          <div class="import-bar">
+            <input type="text" id="importUrl" placeholder="https://open.spotify.com/playlist/..." autocomplete="off">
+            <button class="btn-small" onclick="importPlaylist()">Import</button>
+          </div>
+          <button class="import-toggle" onclick="toggleImportMode()" id="importToggleLink">or paste a track list (one song per line)</button>
+          <div class="import-bar hidden" id="textImportWrap" style="flex-direction: column; gap: 6px;">
+            <input type="text" id="importTextName" placeholder="Playlist name (optional)" autocomplete="off">
+            <textarea id="importText" rows="6" placeholder="Artist - Title&#10;Title by Artist&#10;Just a song title&#10;..."></textarea>
+            <div class="import-bar">
+              <button class="btn-small" onclick="importTextList()">Import text</button>
+              <button class="btn-small" onclick="toggleImportMode()">Back to link</button>
+            </div>
+          </div>
+          <div id="importResults"></div>
+        </div>
+        <div id="playlistsList"></div>
+        <div id="playlistDetail" class="hidden">
+          <button class="btn-back" onclick="showPlaylistsList()">&#8592; Back</button>
+          <h3 id="playlistTitle"></h3>
+          <div id="playlistSongs" class="song-list"></div>
+        </div>
+      </div>
+
+      <!-- Cached Tab -->
+      <div id="tab-cached" class="tab-content">
+        <div class="section-header">
+          <h2>Cached Songs</h2>
+          <button class="btn-small btn-danger" onclick="clearAllCached()">Clear All</button>
+        </div>
+        <p class="hint">Cached songs play offline, even when your laptop is off.</p>
+        <div id="cachedList" class="song-list"></div>
+        <div id="cachedEmpty" class="empty-state">No cached songs yet. Tap the download icon to cache!</div>
+        <div id="cacheStats" class="cache-stats"></div>
+      </div>
+    </main>
+
+    <!-- Player Bar -->
+    <div id="playerBar" class="player-bar hidden">
+      <div class="player-progress" id="playerProgress">
+        <div class="progress-bar" id="progressFill"></div>
+      </div>
+      <div class="player-info">
+        <img id="playerThumb" class="player-thumb" src="" alt="">
+        <div class="player-text">
+          <div id="playerTitle" class="player-title">No song</div>
+          <div id="playerChannel" class="player-channel"></div>
+        </div>
+        <div class="player-controls">
+          <button onclick="prevTrack()" class="ctrl-btn" title="Previous">&#9198;</button>
+          <button onclick="togglePlay()" class="ctrl-btn play-btn" id="playPauseBtn" title="Play/Pause">&#9654;</button>
+          <button onclick="nextTrack()" class="ctrl-btn" title="Next">&#9197;</button>
+          <div class="volume-control">
+            <button onclick="toggleMute()" class="ctrl-btn" id="muteBtn" title="Volume">&#128266;</button>
+            <input type="range" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+          </div>
+        </div>
+      </div>
+      <audio id="audioPlayer" preload="auto"></audio>
+    </div>
+  </div>
+
+  <script src="/app.js?ver=9"></script>
+</body>
+</html>

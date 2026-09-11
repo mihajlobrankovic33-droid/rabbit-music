@@ -1,0 +1,26 @@
+[Unit]
+Description=Rabbit Music Server + Internet Tunnel
+Documentation=file:///home/mihe/Documents/Default Project/rabbit music/README.md
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mihe
+Group=mihe
+WorkingDirectory=/home/mihe/Documents/Default Project/rabbit music
+ExecStart=/bin/bash run.sh
+Environment=HOME=/home/mihe
+Environment=NODE_ENV=production
+Restart=always
+RestartSec=3
+# File-based logging (also still available in journalctl)
+StandardOutput=append:/home/mihe/Documents/Default Project/rabbit music/server.log
+StandardError=append:/home/mihe/Documents/Default Project/rabbit music/server.log
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

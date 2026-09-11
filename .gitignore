@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Downloaded binaries (auto-fetched by start.sh)
+bin/
+cloudflared
+yt-dlp
+
+# Secrets
+.env
+
+# Logs
+*.log
+tunnel_url.log
+
+# OS
+.DS_Store
+Thumbs.db
