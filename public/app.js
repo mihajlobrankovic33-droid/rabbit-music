@@ -1,6 +1,6 @@
 // ====== IndexedDB for offline caching ======
 const DB_NAME = 'MusicServerDB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 let db = null;
 
 function openDB() {
@@ -431,7 +431,8 @@ async function loadAndPlay(song) {
   // Check if cached in IndexedDB
   const cachedAudio = await dbGet('audioBlobs', song.videoId);
   if (cachedAudio) {
-    const blobUrl = URL.createObjectURL(cachedAudio.blob);
+    const blob = new Blob([cachedAudio.data], { type: 'audio/webm' });
+    const blobUrl = URL.createObjectURL(blob);
     audio.src = blobUrl;
     audio.play().catch(() => {});
     showToast('Playing from cache');
@@ -657,16 +658,17 @@ async function cacheSongToIndexedDB(song) {
     cachedAt: Date.now()
   });
 
-  // Fetch audio
+  // Fetch audio as ArrayBuffer (more reliable than blob for IndexedDB)
   const response = await fetch(`/api/stream/${song.videoId}`);
-  if (!response.ok) throw new Error('Stream failed');
+  if (!response.ok) throw new Error('Stream failed: ' + response.status);
 
-  const blob = await response.blob();
+  const buffer = await response.arrayBuffer();
 
-  // Store audio blob
+  // Store audio as ArrayBuffer
   await dbPut('audioBlobs', {
     videoId: song.videoId,
-    blob: blob
+    data: buffer,
+    size: buffer.byteLength
   });
   cachedSongs.add(song.videoId);
 }
@@ -703,7 +705,7 @@ async function toggleCache(btn, song) {
     console.error('Cache error:', e);
     btn.classList.remove('caching');
     btn.innerHTML = '&#8615;';
-    showToast('Failed to cache song');
+    showToast('Cache failed: ' + (e.message || e));
   }
 }
 
@@ -727,7 +729,7 @@ async function renderCached() {
   let totalSize = 0;
   const audioBlobs = await dbGetAll('audioBlobs');
   audioBlobs.forEach(a => {
-    if (a.blob && a.blob.size) totalSize += a.blob.size;
+    if (a.data) totalSize += a.data.byteLength || a.data.size || 0;
   });
 
   allCached.sort((a, b) => (b.cachedAt || 0) - (a.cachedAt || 0)).forEach(song => {
