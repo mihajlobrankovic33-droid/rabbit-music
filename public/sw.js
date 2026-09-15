@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rabbit-music-v5';
+const CACHE_NAME = 'rabbit-music-v6';
 const SHELL = [
   '/',
   '/index.html',
